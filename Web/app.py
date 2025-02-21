@@ -3,7 +3,6 @@ import pickle
 import re
 import nltk
 import fitz  # PyMuPDF for PDF reading
-import tempfile
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -29,7 +28,6 @@ def clean_text_nltk(text):
     text = text.lower()
     text = re.sub(r"\W+", " ", text)  # Remove non-word characters
     text = re.sub(r"\d+", "", text)  # Remove digits
-    text = re.sub(r"\s+", " ", text)  # Replace multiple spaces with a single space
     tokens = text.split()  # Tokenize the text
     tokens = [word for word in tokens if word not in stop_words]  # Remove stopwords
     return " ".join(tokens)
@@ -58,13 +56,12 @@ def predict():
         if not file.filename.endswith('.pdf'):
             return jsonify({"error": "Only PDF files are allowed"}), 400
 
-        # Save the uploaded file temporarily in a temp directory
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-            tmp_file.write(file.read())
-            tmp_pdf_path = tmp_file.name
+        # Save file temporarily in a local directory
+        temp_path = f"temp_resume.pdf"
+        file.save(temp_path)
 
         # Extract text from the PDF
-        resume_text = extract_text_from_pdf(tmp_pdf_path)
+        resume_text = extract_text_from_pdf(temp_path)
         if not resume_text.strip():
             return jsonify({"error": "Failed to extract text from the resume"}), 400
 
@@ -77,6 +74,7 @@ def predict():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
